@@ -1,10 +1,20 @@
 const express = require('express');
 const bodyParser = require('body-parser');
+const mongoose = require('mongoose');
+
+const Post = require('./models/posts');
 
 const app = express();
 
+mongoose.connect("mongodb+srv://max:ZtYiuQbNzN335eqg@cluster0.3dwzl.mongodb.net/node-angular?retryWrites=true&w=majority")
+.then(() => {
+  console.log('Connected to database!');
+})
+.catch(() => {
+  console.log('Connection failed!');
+});
+
 app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({extented: false}));
 
 // here i wanna manipulate the request to avoid CORS
 app.use((req,res,next) => {
@@ -23,29 +33,32 @@ app.use((req,res,next) => {
 });
 
 app.post("/api/posts",(req,res, next) =>{
-  const post=req.body;
-  console.log(post);
+  const post= new Post({
+    title: req.body.title,
+    content:req.body.content
+  });
+  post.save();
   res.status(201).json({
     message: 'Post added successfully'
   });
 });
 
 //user() is a middleware function, ceva se pune intre entitati, ca o palnie
-app.get('/api/posts',(req,res, next) => {
-  const posts =[
-    { id: '1234' ,
-      title : 'First server-side post',
-      content: 'This is coming from the server'
-    },
-    { id: 'gesagea' ,
-      title : 'Second server-side post',
-      content: 'This is coming from the server!'
-  }
-  ];
-  res.status(200).json({
-    message: 'Posts fetched succesfully!',
-    posts: posts
-  });
+app.get("/api/posts", (req, res, next) => {
+  Post.find()
+  .then(documents => {
+      res.status(200).json({
+        message: 'Posts fetched succesfully!',
+        posts: documents
+      });
+    });
 });
+
+app.delete("/api/posts/:id", (req, res, next) => {
+  Post.deleteOne({_id: req.params.id}).then(result => {
+    console.log(result);
+    res.status(200).json({message: 'Post deleted!'});
+  });
+})
 
 module.exports = app;
